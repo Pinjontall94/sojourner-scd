@@ -30,7 +30,9 @@ SynthDef(\lfo, {|outBus, inBus, mul, add|
     Out.ar(outBus, src);
 }).add;
 
-SynthDef(\carrier, {|outBus, inBus, mul, add|
+SynthDef(\carrier, {
+    |outBus, inBus, modOscBus, lfoBus, envBus,
+    mul, freq, freqMod, subMul|
     /*
     Carrier:
     - range b
@@ -39,23 +41,30 @@ SynthDef(\carrier, {|outBus, inBus, mul, add|
     - additive/FM b
     - suboscillator
     - feedback
+
+    inputs: kyb, arp, env1, lfo
+    outputs: vca
     */
-    var src;
-    src = In.ar(inBus, 1);
+    var src, sub;
+    src = SinOsc.ar();
+    sub = SinOsc.ar();
     Out.ar(outBus, src);
 }).add;
 
-SynthDef(\hpf, {|outBus, inBus, mul, add|
+SynthDef(\hpf, {|outBus, inBus, freq|
     /*
     HPF:
     - freq
     */
     var src;
     src = In.ar(inBus, 1);
+    src = HPF.ar(src, freq);
     Out.ar(outBus, src);
 }).add;
 
-SynthDef(\modulator, {|outBus, inBus, mul, add|
+SynthDef(\modulator, {
+    |outBus, inBus, envBus, velBus, lfoBus, keyBus,
+    mul, feedback, ratio, detune, env, vel, lfo, key|
     /*
     Modulator:
     - level
@@ -68,6 +77,9 @@ SynthDef(\modulator, {|outBus, inBus, mul, add|
     - velocity (amt on level)
     - lfo (amt on level)
     - keyboard (amt on level)
+
+    inputs: kyb, arp, env2, lfo, vel
+    outputs: vca
     */
     var src;
     src = In.ar(inBus, 1);
@@ -78,7 +90,11 @@ SynthDef(\vca, {|outBus, inBus, mul, add|
     /*
     VCA:
     - env1/gate b
+    - velocity
     - level
+
+    inputs: carrier; modulator
+    outputs: fx bus; carrier
     */
     var src;
     src = In.ar(inBus, 1);
@@ -91,28 +107,37 @@ SynthDef(\env, {|outBus, inBus, mul, add|
     - sustain b
     - attack
     - decay/release
+
+    inputs: kyb, arp
+    outputs: vca1, vca2
     */
     var src;
     src = In.ar(inBus, 1);
     Out.ar(outBus, src);
 }).add;
 
-SynthDef(\chorus, {|outBus, inBus, mul, add|
+SynthDef(\chorus, {|outBus, inBus, mix, delayOffset, depth, rate|
     /*
     Chorus:
     - on/off b
     - I/II/I&II
+
+    inputs: vca1
+    outputs: reverb
     */
     var src;
     src = In.ar(inBus, 2); // stereo fx
     Out.ar(outBus, src);
 }).add;
 
-SynthDef(\reverb, {|outBus, inBus, mul, add|
+SynthDef(\reverb, {|outBus, inBus, mix, decay|
     /*
     Reverb:
     - on/off b
     - room/plate/hall
+
+    inputs: chorus
+    outputs: level
     */
     var src;
     src = In.ar(inBus, 2); // stereo fx
@@ -126,7 +151,22 @@ SynthDef(\reverb, {|outBus, inBus, mul, add|
 (
 ~sources = Group.new;
 ~effects = Group.after(~sources);     // make sure it's after
-~bus = Bus.audio(s, 2);         // this will be our stereo effects bus
+
+~mainBus = Bus.audio(s, 2);         // this will be our stereo effects bus
+~reverbBus = Bus.audio(s, 2);
+~chorusBus = Bus.audio(s, 2);
+
+~carrierBus = Bus.audio(s, 1);
+~modBus = Bus.audio(s, 1);
+~vca1Bus = Bus.audio(s, 1);
+~vca2Bus = Bus.audio(s, 1);
+
+~kybBus = Bus.control(s, 1);
+~arpBus = Bus.control(s, 1);
+~lfoBus = Bus.control(s, 1);
+~env1Bus = Bus.control(s, 1);
+~env2Bus = Bus.control(s, 1);
+~velBus = Bus.control(s, 1);
 )
 
 
@@ -175,6 +215,7 @@ z = Synth(\decaySinEx, [\effectBus, ~bus, \outBus, 0, \freq, 660], ~sources);
 
     VCA:
     - env1/gate b
+    - velocity
     - level
 
     Env 1 & 2:

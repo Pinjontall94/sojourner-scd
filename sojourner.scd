@@ -152,7 +152,7 @@ SynthDef(\reverb, {|outBus, inBus, mix, decay|
 ~sources = Group.new;
 ~effects = Group.after(~sources);     // make sure it's after
 
-~mainBus = Bus.audio(s, 2);         // this will be our stereo effects bus
+~mainBus = Bus.audio(s, 2);
 ~reverbBus = Bus.audio(s, 2);
 ~chorusBus = Bus.audio(s, 2);
 
@@ -204,7 +204,7 @@ z = Synth(\decaySinEx, [\effectBus, ~bus, \outBus, 0, \freq, 660], ~sources);
     Modulator:
     - level
     - ratio (0-7x)
-    - detune
+    - detune (0-0.5x)
     - detune lfo/manual/env2 b
     - env2
     - env2 polarity (+/-)
@@ -239,4 +239,20 @@ z = Synth(\decaySinEx, [\effectBus, ~bus, \outBus, 0, \freq, 660], ~sources);
 */
 
 ~sources.free; ~effects.free; // Turn off sources and effects
-~bus.free;                    // Unplug the cables
+(
+~mainBus.free;
+~reverbBus.free;
+~chorusBus.free;
+
+~carrierBus.free;
+~modBus.free;
+~vca1Bus.free;
+~vca2Bus.free;
+
+~kybBus.free;
+~arpBus.free;
+~lfoBus.free;
+~env1Bus.free;
+~env2Bus.free;
+~velBus.free;
+)
